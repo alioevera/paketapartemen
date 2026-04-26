@@ -113,7 +113,7 @@ const deleteReception = (id) => {
     <Head title="Data Reception" />
 
     <AppLayout
-        title="Data Reception"
+        title="Data Resepsionis"
         active-menu="reception"
         :user-name="authUser?.user_name || 'User'"
     >

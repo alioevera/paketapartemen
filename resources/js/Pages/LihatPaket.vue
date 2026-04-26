@@ -120,11 +120,8 @@ const resetFilter = () => {
 
                     <div class="rounded-2xl border border-[#e5ebe6] bg-[#fafcfb] p-3">
                         <div class="mb-3 flex items-center justify-between gap-3">
-                            <p class="text-xs font-medium uppercase tracking-wide text-[#8a9a91]">
+                            <p class="text-m font-semibold uppercase tracking-wide text-[#8a9a91]">
                                 Tabel Paket
-                            </p>
-                            <p class="text-xs text-[#9aa8a1]">
-                                Geser ke kanan bila layar kecil
                             </p>
                         </div>
 
