@@ -76,7 +76,7 @@ const menuItems = [
             </div>
         </div>
 
-        <div class="flex-1 overflow-hidden px-4 py-6">
+        <div class="flex-1 overflow-hidden px-4 py-3">
             <div class="space-y-2">
                 <Link
                     v-for="item in menuItems"
