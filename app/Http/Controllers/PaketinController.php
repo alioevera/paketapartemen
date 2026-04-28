@@ -21,19 +21,16 @@ class PaketinController extends Controller
             ->get()
             ->map(function ($item) {
                 return [
-                    'paketin_id' => $item->paketin_id,
-                    'input_date' => optional($item->input_date)->format('Y-m-d'),
-                    'input_time' => optional($item->input_date)->format('H:i'),
-                    'penerima_input' => $item->reception?->user_name,
-                    'expedisi_name' => $item->expedisi?->expedisi_name,
-                    'nomor_unit' => $item->unit,
-                    'tower_name' => $item->tower?->tower_name,
-                    'kepada' => $item->penghuni?->nama_penghuni,
-                    'bentuk_paket' => $item->bentuk_paket,
-                    'jumlah_paket' => $item->jumlah_paket,
-                    'lokasi_simpan' => $item->lokasi_simpan,
-                    'foto_paket' => $item->foto_paket,
-                    'status_verifikasi' => $item->status_verifikasi,
+                'paketin_id' => $item->paketin_id,
+                'input_date' => optional($item->input_date)->format('Y-m-d'),
+                'input_time' => optional($item->input_date)->format('H:i'),
+                'input_date_raw' => optional($item->input_date)?->toDateTimeString(),
+                'penerima_input' => $item->reception?->user_name,
+                'expedisi_name' => $item->expedisi?->expedisi_name,
+                'nomor_unit' => $item->unit,
+                'tower_name' => $item->tower?->tower_name,
+                'kepada' => $item->penghuni?->nama_penghuni,
+                'status_verifikasi' => $item->status_verifikasi,
                 ];
             });
 

@@ -31,7 +31,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('paket-masuk.create', absolute: false));
+        return redirect()->intended(route('lihat-paket.index', absolute: false));
     }
 
     public function destroy(Request $request): RedirectResponse

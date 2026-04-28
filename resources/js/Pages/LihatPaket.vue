@@ -14,18 +14,35 @@ const props = defineProps({
     },
 })
 
+const DEADLINE_DAYS = 3
+
 const filters = reactive({
     search: '',
     tanggalMasuk: '',
 })
 
 const formatDate = (value) => {
-    if (!value) return ''
+    if (!value) return '-'
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         const [y, m, d] = value.split('-')
         return `${d}-${m}-${y}`
     }
     return value
+}
+
+const formatDeadline = (value) => {
+    if (!value) return '-'
+
+    const baseDate = new Date(value.replace(' ', 'T'))
+    if (Number.isNaN(baseDate.getTime())) return '-'
+
+    baseDate.setDate(baseDate.getDate() + DEADLINE_DAYS)
+
+    const y = baseDate.getFullYear()
+    const m = String(baseDate.getMonth() + 1).padStart(2, '0')
+    const d = String(baseDate.getDate()).padStart(2, '0')
+
+    return `${d}-${m}-${y}`
 }
 
 const filteredPaket = computed(() => {
@@ -126,7 +143,7 @@ const resetFilter = () => {
                         </div>
 
                         <div class="table-scroll w-full overflow-x-auto overflow-y-hidden rounded-xl border border-[#e5ebe6] bg-white">
-                            <table class="min-w-[980px] w-full border-separate border-spacing-0 text-sm text-[#5f7067]">
+                            <table class="min-w-[1250px] w-full border-separate border-spacing-0 text-sm text-[#5f7067]">
                                 <thead>
                                     <tr class="bg-[#f5f7f6] text-left text-[#6b7d72]">
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Tanggal Masuk</th>
@@ -136,6 +153,8 @@ const resetFilter = () => {
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Unit</th>
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Tower</th>
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Nama Penghuni</th>
+                                        <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Batas Pengambilan</th>
+                                        <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Status Verifikasi</th>
                                         <th class="whitespace-nowrap border-b border-[#e5ebe6] px-4 py-3 text-center font-semibold">Aksi</th>
                                     </tr>
                                 </thead>
@@ -167,6 +186,19 @@ const resetFilter = () => {
                                         <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4">
                                             {{ p.kepada }}
                                         </td>
+                                        <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4">
+                                            {{ formatDeadline(p.input_date_raw) }}
+                                        </td>
+                                        <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4">
+                                            <span
+                                                class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                                                :class="p.status_verifikasi === 'Pending'
+                                                    ? 'bg-amber-100 text-amber-700'
+                                                    : 'bg-emerald-100 text-emerald-700'"
+                                            >
+                                                {{ p.status_verifikasi || 'Pending' }}
+                                            </span>
+                                        </td>
 
                                         <td class="whitespace-nowrap border-b border-[#eef2ef] px-4 py-4">
                                             <div class="flex items-center justify-center gap-2">
@@ -174,7 +206,7 @@ const resetFilter = () => {
                                                     :href="route('paket.show', p.paketin_id)"
                                                     class="rounded-lg bg-blue-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-600"
                                                 >
-                                                    View 
+                                                    View
                                                 </Link>
 
                                                 <Link
@@ -188,7 +220,7 @@ const resetFilter = () => {
                                     </tr>
 
                                     <tr v-if="!filteredPaket.length">
-                                        <td colspan="8" class="px-4 py-12 text-center text-sm text-[#8ea095]">
+                                        <td colspan="10" class="px-4 py-12 text-center text-sm text-[#8ea095]">
                                             Belum ada data paket masuk.
                                         </td>
                                     </tr>
@@ -197,7 +229,6 @@ const resetFilter = () => {
                         </div>
                     </div>
 
-                    <!-- Card mobile -->
                     <div class="mt-5 grid gap-4 xl:hidden">
                         <div
                             v-for="p in filteredPaket"
@@ -233,6 +264,23 @@ const resetFilter = () => {
                                     <p class="text-[11px] uppercase tracking-wide text-[#8a9a91]">Nama Penghuni</p>
                                     <p class="mt-1 text-[#556b60]">{{ p.kepada || '-' }}</p>
                                 </div>
+
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-wide text-[#8a9a91]">Batas Pengambilan</p>
+                                    <p class="mt-1 text-[#556b60]">{{ formatDeadline(p.input_date_raw) }}</p>
+                                </div>
+
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-wide text-[#8a9a91]">Status</p>
+                                    <span
+                                        class="mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                                        :class="p.status_verifikasi === 'Pending'
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-emerald-100 text-emerald-700'"
+                                    >
+                                        {{ p.status_verifikasi || 'Pending' }}
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="mt-4 flex gap-2">
@@ -247,7 +295,7 @@ const resetFilter = () => {
                                     :href="route('paket.edit', p.paketin_id)"
                                     class="inline-flex flex-1 items-center justify-center rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
                                 >
-                                    Edit Detail
+                                    Edit
                                 </Link>
                             </div>
                         </div>
