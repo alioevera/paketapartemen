@@ -21,16 +21,16 @@ class PaketinController extends Controller
             ->get()
             ->map(function ($item) {
                 return [
-                'paketin_id' => $item->paketin_id,
-                'input_date' => optional($item->input_date)->format('Y-m-d'),
-                'input_time' => optional($item->input_date)->format('H:i'),
-                'input_date_raw' => optional($item->input_date)?->toDateTimeString(),
-                'penerima_input' => $item->reception?->user_name,
-                'expedisi_name' => $item->expedisi?->expedisi_name,
-                'nomor_unit' => $item->unit,
-                'tower_name' => $item->tower?->tower_name,
-                'kepada' => $item->penghuni?->nama_penghuni,
-                'status_verifikasi' => $item->status_verifikasi,
+                    'paketin_id' => $item->paketin_id,
+                    'input_date' => optional($item->input_date)->format('Y-m-d'),
+                    'input_time' => optional($item->input_date)->format('H:i'),
+                    'input_date_raw' => optional($item->input_date)?->toDateTimeString(),
+                    'penerima_input' => $item->reception?->user_name,
+                    'expedisi_name' => $item->expedisi?->expedisi_name,
+                    'nomor_unit' => $item->unit,
+                    'tower_name' => $item->tower?->tower_name,
+                    'kepada' => $item->penghuni?->nama_penghuni,
+                    'status_verifikasi' => $item->status_verifikasi,
                 ];
             });
 
@@ -64,7 +64,6 @@ class PaketinController extends Controller
             'bentuk_paket' => ['required', 'string'],
             'jumlah_paket' => ['required', 'integer', 'min:1'],
             'lokasi_simpan' => ['required', 'string'],
-            'batas_pengambilan' => ['nullable', 'date'],
             'foto_paket' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
@@ -76,17 +75,7 @@ class PaketinController extends Controller
             ])->withInput();
         }
 
-        $inputDateTime = Carbon::parse($validated['tanggal_masuk'].' '.$validated['jam_masuk']);
-
-        if (! empty($validated['batas_pengambilan'])) {
-            $batasPengambilan = Carbon::parse($validated['batas_pengambilan']);
-
-            if ($batasPengambilan->lessThan($inputDateTime)) {
-                return back()->withErrors([
-                    'batas_pengambilan' => 'Batas pengambilan tidak boleh lebih awal dari waktu masuk.',
-                ])->withInput();
-            }
-        }
+        $inputDateTime = Carbon::parse($validated['tanggal_masuk'] . ' ' . $validated['jam_masuk']);
 
         $fotoPath = null;
         if ($request->hasFile('foto_paket')) {
@@ -113,48 +102,44 @@ class PaketinController extends Controller
     }
 
     public function show($id): Response
-{
-    $paket = Paketin::with([
-        'reception',
-        'expedisi',
-        'tower',
-        'penghuni',
-        'paketout.reception',
-    ])->findOrFail($id);
+    {
+        $paket = Paketin::with([
+            'reception',
+            'expedisi',
+            'tower',
+            'penghuni',
+            'paketout.reception',
+        ])->findOrFail($id);
 
-    return Inertia::render('Paket/PaketDetail', [
-        'paket' => [
-            'paketin_id' => $paket->paketin_id,
-            'unit' => $paket->unit,
-            'input_date' => optional($paket->input_date)->format('Y-m-d'),
-            'input_time' => optional($paket->input_date)->format('H:i'),
-            'reception_name' => $paket->reception?->user_name,
-            'tower_name' => $paket->tower?->tower_name,
-            'penghuni_name' => $paket->penghuni?->nama_penghuni,
-            'expedisi_name' => $paket->expedisi?->expedisi_name,
-            'bentuk_paket' => $paket->bentuk_paket,
-            'jumlah_paket' => $paket->jumlah_paket,
-            'lokasi_simpan' => $paket->lokasi_simpan,
-            'status_verifikasi' => $paket->status_verifikasi,
-            'foto_paket' => $paket->foto_paket,
-
-            'paketout' => $paket->paketout ? [
-                'paketout_id' => $paket->paketout->paketout_id,
-                'out_date' => optional($paket->paketout->out_date)->format('Y-m-d'),
-                'out_time' => optional($paket->paketout->out_date)->format('H:i'),
-                'pengambil' => $paket->paketout->pengambil,
-                'saksi_keluar' => $paket->paketout->reception?->user_name,
-                'send_pengingat' => $paket->paketout->send_pengingat,
-                'pengingat_dikirim_at' => optional($paket->paketout->pengingat_dikirim_at)->format('Y-m-d H:i'),
-            ] : null,
-        ],
-
-        'authUser' => [
-            'user_nik' => Auth::user()?->user_nik,
-            'user_name' => Auth::user()?->user_name,
-        ],
-    ]);
-}
+        return Inertia::render('Paket/PaketDetail', [
+            'paket' => [
+                'paketin_id' => $paket->paketin_id,
+                'unit' => $paket->unit,
+                'input_date' => optional($paket->input_date)->format('Y-m-d'),
+                'input_time' => optional($paket->input_date)->format('H:i'),
+                'reception_name' => $paket->reception?->user_name,
+                'tower_name' => $paket->tower?->tower_name,
+                'penghuni_name' => $paket->penghuni?->nama_penghuni,
+                'expedisi_name' => $paket->expedisi?->expedisi_name,
+                'bentuk_paket' => $paket->bentuk_paket,
+                'jumlah_paket' => $paket->jumlah_paket,
+                'lokasi_simpan' => $paket->lokasi_simpan,
+                'status_verifikasi' => $paket->status_verifikasi,
+                'foto_paket' => $paket->foto_paket,
+                'paketout' => $paket->paketout ? [
+                    'paketout_id' => $paket->paketout->paketout_id,
+                    'out_date' => optional($paket->paketout->out_date)->format('Y-m-d'),
+                    'out_time' => optional($paket->paketout->out_date)->format('H:i'),
+                    'pengambil' => $paket->paketout->pengambil,
+                    'saksi_keluar' => $paket->paketout->reception?->user_name,
+                ] : null,
+            ],
+            'authUser' => [
+                'user_nik' => Auth::user()?->user_nik,
+                'user_name' => Auth::user()?->user_name,
+            ],
+        ]);
+    }
 
     public function edit($id)
     {

@@ -14,8 +14,6 @@ const props = defineProps({
     },
 })
 
-const DEADLINE_DAYS = 3
-
 const filters = reactive({
     search: '',
     tanggalMasuk: '',
@@ -30,19 +28,34 @@ const formatDate = (value) => {
     return value
 }
 
-const formatDeadline = (value) => {
+const formatDeadlineDate = (value) => {
     if (!value) return '-'
 
-    const baseDate = new Date(value.replace(' ', 'T'))
-    if (Number.isNaN(baseDate.getTime())) return '-'
+    const masuk = new Date(value.replace(' ', 'T'))
+    if (Number.isNaN(masuk.getTime())) return '-'
 
-    baseDate.setDate(baseDate.getDate() + DEADLINE_DAYS)
+    const deadline = new Date(masuk)
+    deadline.setMonth(deadline.getMonth() + 1)
+    deadline.setDate(deadline.getDate() - 7)
 
-    const y = baseDate.getFullYear()
-    const m = String(baseDate.getMonth() + 1).padStart(2, '0')
-    const d = String(baseDate.getDate()).padStart(2, '0')
+    const d = String(deadline.getDate()).padStart(2, '0')
+    const m = String(deadline.getMonth() + 1).padStart(2, '0')
+    const y = deadline.getFullYear()
 
     return `${d}-${m}-${y}`
+}
+
+const isOverThreeWeeksPending = (item) => {
+    if (item.status_verifikasi !== 'Pending' || !item.input_date_raw) return false
+
+    const masuk = new Date(item.input_date_raw.replace(' ', 'T'))
+    if (Number.isNaN(masuk.getTime())) return false
+
+    const now = new Date()
+    const diffMs = now.getTime() - masuk.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    return diffDays > 21
 }
 
 const filteredPaket = computed(() => {
@@ -187,16 +200,22 @@ const resetFilter = () => {
                                             {{ p.kepada }}
                                         </td>
                                         <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4">
-                                            {{ formatDeadline(p.input_date_raw) }}
+                                            {{ formatDeadlineDate(p.input_date_raw) }}
                                         </td>
                                         <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4">
                                             <span
                                                 class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                                                :class="p.status_verifikasi === 'Pending'
-                                                    ? 'bg-amber-100 text-amber-700'
-                                                    : 'bg-emerald-100 text-emerald-700'"
+                                                :class="isOverThreeWeeksPending(p)
+                                                    ? 'bg-rose-100 text-rose-700'
+                                                    : p.status_verifikasi === 'Pending'
+                                                        ? 'bg-amber-100 text-amber-700'
+                                                        : 'bg-emerald-100 text-emerald-700'"
                                             >
-                                                {{ p.status_verifikasi || 'Pending' }}
+                                                {{
+                                                    isOverThreeWeeksPending(p)
+                                                        ? 'Pending > 3 Minggu'
+                                                        : (p.status_verifikasi || 'Pending')
+                                                }}
                                             </span>
                                         </td>
 
@@ -267,18 +286,24 @@ const resetFilter = () => {
 
                                 <div>
                                     <p class="text-[11px] uppercase tracking-wide text-[#8a9a91]">Batas Pengambilan</p>
-                                    <p class="mt-1 text-[#556b60]">{{ formatDeadline(p.input_date_raw) }}</p>
+                                    <p class="mt-1 text-[#556b60]">{{ formatDeadlineDate(p.input_date_raw) }}</p>
                                 </div>
 
                                 <div>
                                     <p class="text-[11px] uppercase tracking-wide text-[#8a9a91]">Status</p>
                                     <span
                                         class="mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                                        :class="p.status_verifikasi === 'Pending'
-                                            ? 'bg-amber-100 text-amber-700'
-                                            : 'bg-emerald-100 text-emerald-700'"
+                                        :class="isOverThreeWeeksPending(p)
+                                            ? 'bg-rose-100 text-rose-700'
+                                            : p.status_verifikasi === 'Pending'
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-emerald-100 text-emerald-700'"
                                     >
-                                        {{ p.status_verifikasi || 'Pending' }}
+                                        {{
+                                            isOverThreeWeeksPending(p)
+                                                ? 'Pending > 3 Minggu'
+                                                : (p.status_verifikasi || 'Pending')
+                                        }}
                                     </span>
                                 </div>
                             </div>
