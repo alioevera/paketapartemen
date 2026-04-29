@@ -15,14 +15,10 @@ class Paketout extends Model
         'user_nik',
         'out_date',
         'pengambil',
-        'send_pengingat',
-        'pengingat_dikirim_at',
     ];
 
     protected $casts = [
         'out_date' => 'datetime',
-        'send_pengingat' => 'boolean',
-        'pengingat_dikirim_at' => 'datetime',
     ];
 
     public function paketin()

@@ -21,10 +21,17 @@ const filters = reactive({
 
 const formatDate = (value) => {
     if (!value) return '-'
+
+    const bulanIndonesia = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ]
+
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         const [y, m, d] = value.split('-')
-        return `${d}-${m}-${y}`
+        return `${Number(d)} ${bulanIndonesia[Number(m) - 1]} ${y}`
     }
+
     return value
 }
 
@@ -38,15 +45,20 @@ const formatDeadlineDate = (value) => {
     deadline.setMonth(deadline.getMonth() + 1)
     deadline.setDate(deadline.getDate() - 7)
 
-    const d = String(deadline.getDate()).padStart(2, '0')
-    const m = String(deadline.getMonth() + 1).padStart(2, '0')
+    const bulanIndonesia = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ]
+
+    const d = deadline.getDate()
+    const m = deadline.getMonth()
     const y = deadline.getFullYear()
 
-    return `${d}-${m}-${y}`
+    return `${d} ${bulanIndonesia[m]} ${y}`
 }
 
 const isOverThreeWeeksPending = (item) => {
-    if (item.status_verifikasi !== 'Pending' || !item.input_date_raw) return false
+    if (item.status_verifikasi !== 'Belum Diambil' || !item.input_date_raw) return false
 
     const masuk = new Date(item.input_date_raw.replace(' ', 'T'))
     if (Number.isNaN(masuk.getTime())) return false
@@ -207,27 +219,20 @@ const resetFilter = () => {
                                                 class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
                                                 :class="isOverThreeWeeksPending(p)
                                                     ? 'bg-rose-100 text-rose-700'
-                                                    : p.status_verifikasi === 'Pending'
+                                                    : p.status_verifikasi === 'Belum Diambil'
                                                         ? 'bg-amber-100 text-amber-700'
                                                         : 'bg-emerald-100 text-emerald-700'"
                                             >
                                                 {{
                                                     isOverThreeWeeksPending(p)
                                                         ? 'Pending > 3 Minggu'
-                                                        : (p.status_verifikasi || 'Pending')
+                                                        : (p.status_verifikasi || 'Belum Diambil')
                                                 }}
                                             </span>
                                         </td>
 
                                         <td class="whitespace-nowrap border-b border-[#eef2ef] px-4 py-4">
                                             <div class="flex items-center justify-center gap-2">
-                                                <Link
-                                                    :href="route('paket.show', p.paketin_id)"
-                                                    class="rounded-lg bg-blue-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-600"
-                                                >
-                                                    View
-                                                </Link>
-
                                                 <Link
                                                     :href="route('paket.edit', p.paketin_id)"
                                                     class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
@@ -295,14 +300,14 @@ const resetFilter = () => {
                                         class="mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold"
                                         :class="isOverThreeWeeksPending(p)
                                             ? 'bg-rose-100 text-rose-700'
-                                            : p.status_verifikasi === 'Pending'
+                                            : p.status_verifikasi === 'Belum Diambil'
                                                 ? 'bg-amber-100 text-amber-700'
                                                 : 'bg-emerald-100 text-emerald-700'"
                                     >
                                         {{
                                             isOverThreeWeeksPending(p)
-                                                ? 'Pending > 3 Minggu'
-                                                : (p.status_verifikasi || 'Pending')
+                                                ? 'Belum Diambil > 3 Minggu'
+                                                : (p.status_verifikasi || 'Belum Diambil')
                                         }}
                                     </span>
                                 </div>

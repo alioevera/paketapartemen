@@ -10,6 +10,11 @@ const props = defineProps({
 
 const today = new Date()
 
+const bulanIndonesia = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+]
+
 const formatDate = (date) => {
     const y = date.getFullYear()
     const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -23,11 +28,11 @@ const formatTime = (date) => {
     return `${h}:${i}`
 }
 
-const formatDateOnly = (date) => {
+const formatTanggalIndonesia = (date) => {
+    const d = date.getDate()
+    const m = date.getMonth()
     const y = date.getFullYear()
-    const m = String(date.getMonth() + 1).padStart(2, '0')
-    const d = String(date.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
+    return `${d} ${bulanIndonesia[m]} ${y}`
 }
 
 const form = useForm({
@@ -51,7 +56,7 @@ const batasPengambilanReadonly = computed(() => {
     deadline.setMonth(deadline.getMonth() + 1)
     deadline.setDate(deadline.getDate() - 7)
 
-    return formatDateOnly(deadline)
+    return formatTanggalIndonesia(deadline)
 })
 
 const onFileChange = (event) => {
@@ -114,7 +119,7 @@ const submit = () => {
                         <label class="mb-2 block text-sm font-medium text-[#6e7f75]">Batas Pengambilan</label>
                         <input
                             :value="batasPengambilanReadonly"
-                            type="date"
+                            type="text"
                             readonly
                             class="w-full rounded border border-[#d8e0da] bg-[#f4f6f8] px-3 py-3 text-sm text-[#556b60] outline-none"
                         />
