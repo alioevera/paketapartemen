@@ -18,6 +18,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/masuk/create', [PaketinController::class, 'create'])->name('paket-masuk.create');
         Route::post('/masuk', [PaketinController::class, 'store'])->name('paket-masuk.store');
 
+        Route::get('/masuk/ocr', [PaketinController::class, 'ocrCreate'])->name('paket-masuk.ocr');
+        Route::post('/masuk/ocr/process', [PaketinController::class, 'ocrProcess'])->name('paket-masuk.ocr.process');
+
         Route::get('/lihat', [PaketinController::class, 'index'])->name('lihat-paket.index');
 
         Route::get('/{id}', [PaketinController::class, 'show'])->name('paket.show');

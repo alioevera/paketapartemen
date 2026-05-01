@@ -1,14 +1,23 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3'
+import { usePage } from '@inertiajs/vue3'
 import { computed } from 'vue'
 import AppLayout from '@/Layouts/AppLayout.vue'
+
+const page = usePage()
+const ocrResult = computed(() => page.props.flash?.ocr_result || null)
 
 const props = defineProps({
     authUser: Object,
     expedisi: Array,
+    prefill: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
 const today = new Date()
+const urlParams = new URLSearchParams(window.location.search)
 
 const bulanIndonesia = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -39,7 +48,7 @@ const form = useForm({
     tanggal_masuk: formatDate(today),
     jam_masuk: formatTime(today),
     expedisi_id: '',
-    unit: '',
+    unit: urlParams.get('unit') || props.prefill?.unit || '',
     bentuk_paket: '',
     jumlah_paket: 1,
     lokasi_simpan: '',

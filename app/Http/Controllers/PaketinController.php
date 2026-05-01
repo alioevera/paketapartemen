@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,7 +45,7 @@ class PaketinController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         return Inertia::render('TambahPaketMasuk', [
             'authUser' => [
@@ -52,6 +53,9 @@ class PaketinController extends Controller
                 'user_name' => Auth::user()?->user_name,
             ],
             'expedisi' => Expedisi::orderBy('expedisi_name')->get(['expedisi_id', 'expedisi_name']),
+            'prefill' => [
+                'unit' => $request->query('unit'),
+            ],
         ]);
     }
 
@@ -76,7 +80,7 @@ class PaketinController extends Controller
             ])->withInput();
         }
 
-        $inputDateTime = Carbon::parse($validated['tanggal_masuk'] . ' ' . $validated['jam_masuk']);
+        $inputDateTime = Carbon::parse($validated['tanggal_masuk'].' '.$validated['jam_masuk']);
 
         $fotoPath = null;
         if ($request->hasFile('foto_paket')) {
@@ -112,7 +116,7 @@ class PaketinController extends Controller
             'paketout.reception',
         ])->findOrFail($id);
 
-        return Inertia::render('Paket/PaketDetail', [
+        return Inertia::render('PaketEdit', [
             'paket' => [
                 'paketin_id' => $paket->paketin_id,
                 'unit' => $paket->unit,
@@ -192,8 +196,8 @@ class PaketinController extends Controller
 
         $paketin = Paketin::findOrFail($id);
 
-        if ($validated['out_date'] && $validated['out_time'] && $validated['pengambil']) {
-            $outDateTime = Carbon::parse($validated['out_date'] . ' ' . $validated['out_time']);
+        if (! empty($validated['out_date']) && ! empty($validated['out_time']) && ! empty($validated['pengambil'])) {
+            $outDateTime = Carbon::parse($validated['out_date'].' '.$validated['out_time']);
 
             Paketout::updateOrCreate(
                 ['paketin_id' => $paketin->paketin_id],
@@ -205,11 +209,106 @@ class PaketinController extends Controller
             );
 
             $paketin->update([
-                'status_verifikasi' => 'Verified',
+                'status_verifikasi' => 'Sudah Diambil',
             ]);
         }
 
         return redirect()->route('paket.show', $paketin->paketin_id)
             ->with('success', 'Detail paket keluar berhasil diperbarui.');
+    }
+
+    public function ocrCreate(): Response
+    {
+        return Inertia::render('PaketMasukOCR', [
+            'authUser' => [
+                'user_nik' => Auth::user()?->user_nik,
+                'user_name' => Auth::user()?->user_name,
+            ],
+            'expedisi' => Expedisi::orderBy('expedisi_name')
+                ->get(['expedisi_id', 'expedisi_name']),
+        ]);
+    }
+
+    public function ocrProcess(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'foto' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        $file = $request->file('foto');
+
+        $response = Http::timeout(180)
+            ->attach(
+                'file',
+                file_get_contents($file->getRealPath()),
+                $file->getClientOriginalName()
+            )
+            ->post(config('services.ocr.url', env('OCR_SERVICE_URL', 'http://127.0.0.1:8001/ocr')));
+
+        if (! $response->successful()) {
+            return back()->withErrors([
+                'foto' => 'OCR gagal diproses. Status: '.$response->status().' | Response: '.$response->body(),
+            ]);
+        }
+
+
+
+        $ocr = $response->json();
+
+        $ocrTexts = collect();
+
+        // kalau ada texts langsung
+        if (isset($ocr['texts'])) {
+            $ocrTexts = collect($ocr['texts']);
+        }
+
+        // kalau pakai PaddleOCR result
+        elseif (isset($ocr['result'])) {
+            foreach ($ocr['result'] as $item) {
+                if (isset($item['rec_texts'])) {
+                    $ocrTexts = $ocrTexts->merge($item['rec_texts']);
+                }
+            }
+        }
+
+        $ocrTexts = $ocrTexts->filter()->values();
+        $hasilText = $ocrTexts->implode("\n");
+
+        $detectedExpedisiName = null;
+        $matchedExpedisiOptions = [];
+        $detectedUnit = null;
+
+        $expedisiList = Expedisi::orderBy('expedisi_name')->get(['expedisi_id', 'expedisi_name']);
+
+        foreach ($expedisiList as $exp) {
+            if (stripos($hasilText, $exp->expedisi_name) !== false) {
+                $detectedExpedisiName = $exp->expedisi_name;
+                $matchedExpedisiOptions[] = [
+                    'expedisi_id' => $exp->expedisi_id,
+                    'expedisi_name' => $exp->expedisi_name,
+                ];
+            }
+        }
+
+        // cocok untuk: UNIT 3205, UNIT3205, UNIT 3205JL, UNIT3205JL
+        if (preg_match('/unit\s*(\d{3,5})/i', $hasilText, $matches)) {
+            $detectedUnit = $matches[1];
+        }
+        // fallback kalau ada angka 4 digit yang paling masuk akal
+        elseif (preg_match('/\b(3\d{3})\b/', $hasilText, $matches)) {
+            $detectedUnit = $matches[1];
+        }
+
+        return redirect()->route('paket-masuk.create', [
+            'unit' => $detectedUnit,
+        ])->with([
+            'ocr_result' => [
+                'texts' => $ocrTexts,
+                'raw_text' => $hasilText,
+                'detected_expedisi_name' => $detectedExpedisiName,
+                'matched_expedisi_options' => $matchedExpedisiOptions,
+                'detected_unit' => $detectedUnit,
+            ],
+        ]);
     }
 }
