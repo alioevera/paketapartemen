@@ -16,6 +16,7 @@ class Paketin extends Model
         'tower_id',
         'penghuni_id',
         'unit',
+        'nomor_resi',
         'bentuk_paket',
         'jumlah_paket',
         'lokasi_simpan',

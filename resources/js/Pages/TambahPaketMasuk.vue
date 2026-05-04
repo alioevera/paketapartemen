@@ -49,6 +49,8 @@ const form = useForm({
     jam_masuk: formatTime(today),
     expedisi_id: '',
     unit: urlParams.get('unit') || props.prefill?.unit || '',
+    nomor_resi: urlParams.get('nomor_resi') || props.prefill?.nomor_resi || '',
+    tujuan_pengiriman: props.prefill?.tujuan_pengiriman || '',
     bentuk_paket: '',
     jumlah_paket: 1,
     lokasi_simpan: '',
@@ -89,6 +91,23 @@ const submit = () => {
     >
         <section class="rounded-md bg-white shadow-sm">
             <div class="px-4 py-5 sm:px-6">
+                <div
+                    v-if="ocrResult"
+                    class="mb-4 rounded-xl border border-[#dbe7de] bg-[#f6fbf7] px-4 py-3"
+                >
+                    <p class="text-sm font-semibold text-[#556b60]">Hasil OCR berhasil dipakai</p>
+                    <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                        <p class="text-xs text-[#8a9a91]">
+                            Unit:
+                            <span class="font-medium text-[#556b60]">{{ ocrResult.detected_unit || '-' }}</span>
+                        </p>
+                        <p class="text-xs text-[#8a9a91]">
+                            Nomor Resi:
+                            <span class="font-medium text-[#556b60]">{{ ocrResult.detected_nomor_resi || '-' }}</span>
+                        </p>
+                    </div>
+                </div>
+
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>
                         <label class="mb-2 block text-sm font-medium text-[#6e7f75]">Tanggal Masuk</label>
@@ -158,6 +177,18 @@ const submit = () => {
                     </div>
 
                     <div>
+                        <label class="mb-2 block text-sm font-medium text-[#6e7f75]">Nomor Resi</label>
+                        <input
+                            v-model="form.nomor_resi"
+                            type="text"
+                            class="w-full rounded border border-[#d8e0da] bg-white px-3 py-3 text-sm text-[#556b60] outline-none"
+                        />
+                        <p v-if="form.errors.nomor_resi" class="mt-1 text-sm text-rose-500">
+                            {{ form.errors.nomor_resi }}
+                        </p>
+                    </div>
+
+                    <div>
                         <label class="mb-2 block text-sm font-medium text-[#6e7f75]">Nomor Unit</label>
                         <input
                             v-model="form.unit"
@@ -166,6 +197,19 @@ const submit = () => {
                         />
                         <p v-if="form.errors.unit" class="mt-1 text-sm text-rose-500">
                             {{ form.errors.unit }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-medium text-[#6e7f75]">Tujuan Pengiriman</label>
+                        <input
+                            :value="form.tujuan_pengiriman || '-'"
+                            type="text"
+                            readonly
+                            class="w-full rounded border border-[#d8e0da] bg-[#f4f6f8] px-3 py-3 text-sm text-[#556b60] outline-none"
+                        />
+                        <p class="mt-1 text-xs text-[#8a9a91]">
+                            Otomatis diambil dari data penghuni berdasarkan nomor unit.
                         </p>
                     </div>
 

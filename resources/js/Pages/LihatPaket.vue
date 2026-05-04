@@ -77,10 +77,17 @@ const isOverThreeWeeksPending = (item) => {
 const filteredPaket = computed(() => {
     return props.paket.filter((item) => {
         const nomorUnit = (item.nomor_unit || '').toLowerCase().trim()
+        const nomorResi = (item.nomor_resi || '').toLowerCase().trim()
+        const tujuanPengiriman = (item.tujuan_pengiriman || '').toLowerCase().trim()
         const search = filters.search.toLowerCase().trim()
         const tglMasuk = item.input_date || ''
 
-        const matchSearch = !search || nomorUnit.includes(search)
+        const matchSearch =
+            !search ||
+            nomorUnit.includes(search) ||
+            nomorResi.includes(search) ||
+            tujuanPengiriman.includes(search)
+
         const matchMasuk = !filters.tanggalMasuk || filters.tanggalMasuk === tglMasuk
 
         return matchSearch && matchMasuk
@@ -180,12 +187,12 @@ const resetFilter = () => {
                     <div class="mb-5 grid gap-4 xl:grid-cols-[1.3fr_1fr_auto]">
                         <div>
                             <label class="mb-2 block text-sm font-medium text-[#6e7f75]">
-                                Cari Nomor Unit
+                                Cari Unit / Tujuan / Resi
                             </label>
                             <input
                                 v-model="filters.search"
                                 type="text"
-                                placeholder="Ketik nomor unit..."
+                                placeholder="Ketik nomor unit, tujuan pengiriman, atau resi..."
                                 class="w-full rounded-xl border border-[#d8e0da] bg-white px-4 py-3 text-sm text-[#556b60] outline-none transition focus:border-[#8aa293] focus:ring-2 focus:ring-[#edf3ef]"
                             />
                         </div>
@@ -220,7 +227,7 @@ const resetFilter = () => {
                         </div>
 
                         <div class="table-scroll w-full overflow-x-auto overflow-y-hidden rounded-xl border border-[#e5ebe6] bg-white">
-                            <table class="min-w-[1250px] w-full border-separate border-spacing-0 text-sm text-[#5f7067]">
+                            <table class="min-w-[1500px] w-full border-separate border-spacing-0 text-sm text-[#5f7067]">
                                 <thead>
                                     <tr class="bg-[#f5f7f6] text-left text-[#6b7d72]">
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Tanggal Masuk</th>
@@ -228,6 +235,8 @@ const resetFilter = () => {
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Resepsionis</th>
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Ekspedisi</th>
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Unit</th>
+                                        <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Tujuan Pengiriman</th>
+                                        <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Nomor Resi</th>
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Tower</th>
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Nama Penghuni</th>
                                         <th class="whitespace-nowrap border-b border-r border-[#e5ebe6] px-4 py-3 font-semibold">Batas Pengambilan</th>
@@ -256,6 +265,12 @@ const resetFilter = () => {
                                         </td>
                                         <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4 font-medium text-[#556b60]">
                                             {{ p.nomor_unit }}
+                                        </td>
+                                        <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4">
+                                            {{ p.tujuan_pengiriman || '-' }}
+                                        </td>
+                                        <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4">
+                                            {{ p.nomor_resi || '-' }}
                                         </td>
                                         <td class="whitespace-nowrap border-b border-r border-[#eef2ef] px-4 py-4">
                                             {{ p.tower_name }}
@@ -296,7 +311,7 @@ const resetFilter = () => {
                                     </tr>
 
                                     <tr v-if="!filteredPaket.length">
-                                        <td colspan="10" class="px-4 py-12 text-center text-sm text-[#8ea095]">
+                                        <td colspan="12" class="px-4 py-12 text-center text-sm text-[#8ea095]">
                                             Belum ada data paket masuk.
                                         </td>
                                     </tr>
@@ -314,6 +329,12 @@ const resetFilter = () => {
                             <div>
                                 <p class="text-sm font-semibold text-[#556b60]">
                                     Unit {{ p.nomor_unit || '-' }}
+                                </p>
+                                <p class="mt-1 text-xs font-medium text-[#556b60]">
+                                    Tujuan: {{ p.tujuan_pengiriman || '-' }}
+                                </p>
+                                <p class="mt-1 text-xs font-medium text-[#5a78b2]">
+                                    Resi: {{ p.nomor_resi || '-' }}
                                 </p>
                                 <p class="mt-1 text-xs text-[#8a9a91]">
                                     {{ p.tower_name || '-' }} • {{ p.expedisi_name || '-' }}

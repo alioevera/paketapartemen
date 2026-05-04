@@ -141,8 +141,17 @@ const submit = () => {
                         </div>
                     </div>
 
+            
+
                     <!-- RINGKASAN -->
                     <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="rounded-2xl bg-[#eef4ff] border border-[#dbe6ff] p-4">
+                            <p class="text-xs font-medium uppercase tracking-wide text-[#7a8fb5]">Nomor Resi</p>
+                            <p class="mt-1 text-sm font-semibold tracking-wide text-[#3f5c9a]">
+                                {{ paket.nomor_resi || '-' }}
+                            </p>
+                        </div>
+
                         <div class="rounded-2xl bg-[#f8fbf9] p-4">
                             <p class="text-xs font-medium uppercase tracking-wide text-[#8a9a91]">Unit</p>
                             <p class="mt-1 text-sm font-semibold text-[#556b60]">

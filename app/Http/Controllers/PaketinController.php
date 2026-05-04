@@ -30,6 +30,8 @@ class PaketinController extends Controller
                     'penerima_input' => $item->reception?->user_name,
                     'expedisi_name' => $item->expedisi?->expedisi_name,
                     'nomor_unit' => $item->unit,
+                    'nomor_resi' => $item->nomor_resi,
+                    'tujuan_pengiriman' => $item->penghuni?->nama_penghuni,
                     'tower_name' => $item->tower?->tower_name,
                     'kepada' => $item->penghuni?->nama_penghuni,
                     'status_verifikasi' => $item->status_verifikasi,
@@ -47,6 +49,13 @@ class PaketinController extends Controller
 
     public function create(Request $request): Response
     {
+        $unit = $request->query('unit');
+        $penghuni = null;
+
+        if ($unit) {
+            $penghuni = Penghuni::where('unit', $unit)->first();
+        }
+
         return Inertia::render('TambahPaketMasuk', [
             'authUser' => [
                 'user_nik' => Auth::user()?->user_nik,
@@ -54,7 +63,9 @@ class PaketinController extends Controller
             ],
             'expedisi' => Expedisi::orderBy('expedisi_name')->get(['expedisi_id', 'expedisi_name']),
             'prefill' => [
-                'unit' => $request->query('unit'),
+                'unit' => $unit,
+                'nomor_resi' => $request->query('nomor_resi'),
+                'tujuan_pengiriman' => $penghuni?->nama_penghuni,
             ],
         ]);
     }
@@ -66,6 +77,7 @@ class PaketinController extends Controller
             'jam_masuk' => ['required'],
             'expedisi_id' => ['required', 'exists:expedisi,expedisi_id'],
             'unit' => ['required', 'string', 'max:10'],
+            'nomor_resi' => ['nullable', 'string', 'max:100'],
             'bentuk_paket' => ['required', 'string'],
             'jumlah_paket' => ['required', 'integer', 'min:1'],
             'lokasi_simpan' => ['required', 'string'],
@@ -93,6 +105,7 @@ class PaketinController extends Controller
             'tower_id' => $penghuni->tower_id,
             'penghuni_id' => $penghuni->penghuni_id,
             'unit' => $validated['unit'],
+            'nomor_resi' => $validated['nomor_resi'] ?? null,
             'bentuk_paket' => $validated['bentuk_paket'],
             'jumlah_paket' => $validated['jumlah_paket'],
             'lokasi_simpan' => $validated['lokasi_simpan'],
@@ -120,6 +133,7 @@ class PaketinController extends Controller
             'paket' => [
                 'paketin_id' => $paket->paketin_id,
                 'unit' => $paket->unit,
+                'nomor_resi' => $paket->nomor_resi,
                 'input_date' => optional($paket->input_date)->format('Y-m-d'),
                 'input_time' => optional($paket->input_date)->format('H:i'),
                 'reception_name' => $paket->reception?->user_name,
@@ -160,6 +174,7 @@ class PaketinController extends Controller
             'paket' => [
                 'paketin_id' => $paket->paketin_id,
                 'unit' => $paket->unit,
+                'nomor_resi' => $paket->nomor_resi,
                 'input_date' => optional($paket->input_date)->format('Y-m-d'),
                 'input_time' => optional($paket->input_date)->format('H:i'),
                 'reception_name' => $paket->reception?->user_name,
@@ -251,19 +266,13 @@ class PaketinController extends Controller
             ]);
         }
 
-
-
         $ocr = $response->json();
 
         $ocrTexts = collect();
 
-        // kalau ada texts langsung
         if (isset($ocr['texts'])) {
             $ocrTexts = collect($ocr['texts']);
-        }
-
-        // kalau pakai PaddleOCR result
-        elseif (isset($ocr['result'])) {
+        } elseif (isset($ocr['result'])) {
             foreach ($ocr['result'] as $item) {
                 if (isset($item['rec_texts'])) {
                     $ocrTexts = $ocrTexts->merge($item['rec_texts']);
@@ -277,6 +286,7 @@ class PaketinController extends Controller
         $detectedExpedisiName = null;
         $matchedExpedisiOptions = [];
         $detectedUnit = null;
+        $detectedResi = null;
 
         $expedisiList = Expedisi::orderBy('expedisi_name')->get(['expedisi_id', 'expedisi_name']);
 
@@ -290,17 +300,21 @@ class PaketinController extends Controller
             }
         }
 
-        // cocok untuk: UNIT 3205, UNIT3205, UNIT 3205JL, UNIT3205JL
         if (preg_match('/unit\s*(\d{3,5})/i', $hasilText, $matches)) {
             $detectedUnit = $matches[1];
-        }
-        // fallback kalau ada angka 4 digit yang paling masuk akal
-        elseif (preg_match('/\b(3\d{3})\b/', $hasilText, $matches)) {
+        } elseif (preg_match('/\b(3\d{3})\b/', $hasilText, $matches)) {
             $detectedUnit = $matches[1];
+        }
+
+        if (preg_match('/\b([A-Z]{2,5}\d{8,20})\b/i', $hasilText, $matches)) {
+            $detectedResi = strtoupper($matches[1]);
+        } elseif (preg_match('/\b(\d{10,20})\b/', $hasilText, $matches)) {
+            $detectedResi = $matches[1];
         }
 
         return redirect()->route('paket-masuk.create', [
             'unit' => $detectedUnit,
+            'nomor_resi' => $detectedResi,
         ])->with([
             'ocr_result' => [
                 'texts' => $ocrTexts,
@@ -308,6 +322,7 @@ class PaketinController extends Controller
                 'detected_expedisi_name' => $detectedExpedisiName,
                 'matched_expedisi_options' => $matchedExpedisiOptions,
                 'detected_unit' => $detectedUnit,
+                'detected_nomor_resi' => $detectedResi,
             ],
         ]);
     }
