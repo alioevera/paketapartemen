@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PaketMasukMail;
 use App\Models\Expedisi;
 use App\Models\Penghuni;
 use App\Models\Paketin;
@@ -11,6 +12,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -92,14 +96,14 @@ class PaketinController extends Controller
             ])->withInput();
         }
 
-        $inputDateTime = Carbon::parse($validated['tanggal_masuk'].' '.$validated['jam_masuk']);
+        $inputDateTime = Carbon::parse($validated['tanggal_masuk'] . ' ' . $validated['jam_masuk']);
 
         $fotoPath = null;
         if ($request->hasFile('foto_paket')) {
             $fotoPath = $request->file('foto_paket')->store('foto-paket', 'public');
         }
 
-        Paketin::create([
+        $paket = Paketin::create([
             'user_nik' => Auth::user()->user_nik,
             'input_date' => $inputDateTime,
             'tower_id' => $penghuni->tower_id,
@@ -115,8 +119,27 @@ class PaketinController extends Controller
             'status_verifikasi' => 'Belum Diambil',
         ]);
 
+        if (!empty($penghuni->email)) {
+            Mail::to($penghuni->email)->send(new \App\Mail\PaketMasukMail($paket, $penghuni));
+        }
+
+        $paket->load(['expedisi', 'penghuni']);
+
+        if ($penghuni->email) {
+        $qrValue = 'PAKET-' . $paket->paketin_id;
+
+        $qrCodeSvg = QrCode::format('svg')
+            ->size(300)
+            ->margin(1)
+            ->generate($qrValue);
+
+        Mail::to($penghuni->email)->send(
+            new PaketMasukMail($paket, $penghuni, $qrValue, $qrCodeSvg)
+        );
+    }
+
         return redirect()->route('lihat-paket.index')
-            ->with('success', 'Paket berhasil disimpan.');
+            ->with('success', 'Paket berhasil disimpan dan email notifikasi berhasil dikirim.');
     }
 
     public function show($id): Response
@@ -129,7 +152,7 @@ class PaketinController extends Controller
             'paketout.reception',
         ])->findOrFail($id);
 
-        return Inertia::render('PaketEdit', [
+        return Inertia::render('PaketDetail', [
             'paket' => [
                 'paketin_id' => $paket->paketin_id,
                 'unit' => $paket->unit,
@@ -212,7 +235,7 @@ class PaketinController extends Controller
         $paketin = Paketin::findOrFail($id);
 
         if (! empty($validated['out_date']) && ! empty($validated['out_time']) && ! empty($validated['pengambil'])) {
-            $outDateTime = Carbon::parse($validated['out_date'].' '.$validated['out_time']);
+            $outDateTime = Carbon::parse($validated['out_date'] . ' ' . $validated['out_time']);
 
             Paketout::updateOrCreate(
                 ['paketin_id' => $paketin->paketin_id],
@@ -262,7 +285,7 @@ class PaketinController extends Controller
 
         if (! $response->successful()) {
             return back()->withErrors([
-                'foto' => 'OCR gagal diproses. Status: '.$response->status().' | Response: '.$response->body(),
+                'foto' => 'OCR gagal diproses. Status: ' . $response->status() . ' | Response: ' . $response->body(),
             ]);
         }
 
@@ -325,5 +348,40 @@ class PaketinController extends Controller
                 'detected_nomor_resi' => $detectedResi,
             ],
         ]);
+    }
+
+    public function scanPage(): Response
+    {
+        return Inertia::render('PaketScanner', [
+            'authUser' => [
+                'user_nik' => Auth::user()?->user_nik,
+                'user_name' => Auth::user()?->user_name,
+            ],
+        ]);
+    }
+
+    public function scanProcess(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'qr_code' => ['required', 'string'],
+        ]);
+
+        if (! preg_match('/^PAKET-(\d+)$/', trim($validated['qr_code']), $matches)) {
+            return back()->withErrors([
+                'qr_code' => 'Format QR code tidak valid. Contoh yang benar: PAKET-5',
+            ]);
+        }
+
+        $paketId = $matches[1];
+
+        $paket = Paketin::find($paketId);
+
+        if (! $paket) {
+            return back()->withErrors([
+                'qr_code' => 'Data paket tidak ditemukan.',
+            ]);
+        }
+
+        return redirect()->route('paket.show', $paket->paketin_id);
     }
 }

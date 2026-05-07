@@ -21,6 +21,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/masuk/ocr', [PaketinController::class, 'ocrCreate'])->name('paket-masuk.ocr');
         Route::post('/masuk/ocr/process', [PaketinController::class, 'ocrProcess'])->name('paket-masuk.ocr.process');
 
+        Route::get('/paket/scan', [PaketinController::class, 'scanPage'])->name('paket.scan.page');
+        Route::post('/paket/scan', [PaketinController::class, 'scanProcess'])->name('paket.scan.process');
+
         Route::get('/lihat', [PaketinController::class, 'index'])->name('lihat-paket.index');
 
         Route::get('/{id}', [PaketinController::class, 'show'])->name('paket.show');
